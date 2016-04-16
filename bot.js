@@ -25,7 +25,7 @@ var archiveQuery = {
 };
 
 runEvanderBot();
-setInterval(runEvanderBot, 1000 * 60 * 60);
+// setInterval(runEvanderBot, 1000 * 60 * 60);
 
 function runEvanderBot() {
 	T.get('statuses/user_timeline', mostRecentQuery, getMostRecentID);

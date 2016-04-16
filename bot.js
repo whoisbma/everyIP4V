@@ -24,24 +24,28 @@ var archiveQuery = {
 	max_id: -1
 };
 
-setInterval(runEvanderBot, 1000 * 60 * 30);
+runEvanderBot();
+setInterval(runEvanderBot, 1000 * 60 * 60);
 
 function runEvanderBot() {
 	T.get('statuses/user_timeline', mostRecentQuery, getMostRecentID);
 }
 
 function getMostRecentID(err, data, response) {
+	console.log("getting ID");
 	if (err) {
 		console.log(err);
 	}
 	// heldTweets.push(data[0].text);
 	archiveQuery.max_id = data[0].id;
+	console.log("set max ID to " + archiveQuery.max_id);
+	console.log("searching for more tweets");
 	T.get('statuses/user_timeline', archiveQuery, combine);
 }
 
 function combine(err, data, response) {
 	if (err) {
-		console.log(err);
+		console.log("error: " + err);
 	}
 
 	//hold tweets from this GET
@@ -75,8 +79,6 @@ function combine(err, data, response) {
 	archiveQuery.max_id = data[data.length-1].id;
 	// console.log(archiveQuery.max_id);
 
-	
-
 	if (count > 0) {
 		count--;
 		T.get('statuses/user_timeline', archiveQuery, combine);
@@ -84,7 +86,7 @@ function combine(err, data, response) {
 		//call the actual markov chain generation on the aggregated tweets
 		// console.log(allTweets);
 
-		
+		//maybe have the chain length be variable
 		var rm = new rita.RiMarkov(3, false, false);
 
 		rm.loadText(allTweets);
@@ -101,8 +103,11 @@ function combine(err, data, response) {
 		//	sentence = sentence.slice(0, sentence.length-1);
 		// }
 
-		var hashRegex = /(#)\s(\S+)/g;
-		sentence = sentence.replace(hashRegex,'$1$2');
+		var hashRegex1 = /(\S+)(#)/g;
+		sentence = sentence.replace(hashRegex1,'$1 $2');
+
+		var hashRegex2 = /(#)\s(\S+)/g;
+		sentence = sentence.replace(hashRegex2,'$1$2');
 
 		var punctRegex = /["$&%-]/g;
 		sentence = sentence.replace(punctRegex, '');
@@ -112,7 +117,7 @@ function combine(err, data, response) {
 
 		sentence = sentence.toLowerCase();
 
-		console.log(sentence);
+		console.log("new tweet: " + sentence);
 		postTweet(sentence);
 
 		// var rm = new rita.RiMarkov(2);

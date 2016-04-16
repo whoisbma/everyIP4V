@@ -24,7 +24,10 @@ var archiveQuery = {
 	max_id: -1
 };
 
+console.log("attempting to run");
 runEvanderBot();
+console.log("attempt to run complete");
+
 // setInterval(runEvanderBot, 1000 * 60 * 60);
 
 function runEvanderBot() {

@@ -2,154 +2,45 @@ console.log("The bot is starting");
 
 var Twit = require('twit');
 var config = require('./config');
-var rita = require('rita');
 
 var T = new Twit(config);
 
-var allTweets;
-var tweetArr = [];
-
-var count = 10;
-
-var mostRecentQuery = {
-	screen_name: 'treeverb',
-	count: 1,
-	include_rts: false
-};
-
-var archiveQuery = {
-	screen_name: 'treeverb',
-	count: 200,
-	include_rts: false,
-	max_id: -1
-};
-
-console.log("attempting to run");
-runEvanderBot();
-console.log("attempt to run complete");
+var arr = [0, 0, 0, 0];
+var done = false;
 
 // setInterval(runEvanderBot, 1000 * 60 * 60);
+setInterval(run, 1000 * 60 * 10);
 
-function runEvanderBot() {
-	T.get('statuses/user_timeline', mostRecentQuery, getMostRecentID);
+function run() {
+  if (done === false) {
+    // console.log(complete(arr));
+    postTweet(complete(arr));
+    recurse(0);
+  }
 }
 
-function getMostRecentID(err, data, response) {
-	console.log("getting ID");
-	if (err) {
-		console.log(err);
-	}
-	// heldTweets.push(data[0].text);
-	archiveQuery.max_id = data[0].id;
-	console.log("set max ID to " + archiveQuery.max_id);
-	console.log("searching for more tweets");
-	T.get('statuses/user_timeline', archiveQuery, combine);
+function recurse(currentDigit) {
+  // console.log(currentDigit);
+  if (currentDigit >= arr.length) {
+    done = true;
+    console.log("DONE");
+    return;
+  }
+
+  if (arr[currentDigit] < 255) {
+    arr[currentDigit]++;
+  } else {
+    arr[currentDigit] = 0;
+    var nextDig = currentDigit + 1;
+    recurse(currentDigit + 1);
+  }
 }
 
-function combine(err, data, response) {
-	if (err) {
-		console.log("error: " + err);
-	}
-
-	//hold tweets from this GET
-	var heldTweets = [];
-
-	//add all except the last one - because we'll use it in the next search
-	for (var i = 0; i < data.length-1; i++) {
-		heldTweets.push(data[i].text);
-		tweetArr.push(data[i].text);
-	}
-
-	// check to see if there is already an end of sentence punctuation, if not, add it
-	// var regexEnd = /[.!?]/g;
-	// for (i = 0; i < heldTweets.length; i++) {
-		// if (regexEnd.test(heldTweets[i].charAt(heldTweets[i].length-1)) === false) {
-			// heldTweets[i] += (".");
-		// }
-		// console.log(data[i].id + ":   " + heldTweets[i]);
-	// }
-
-	// add this GET's tweets to a single string, remove replies and urls
-	// later add this to the total global one.
-	var combinedTweets = heldTweets.join(" ");
-	combinedTweets = combinedTweets.replace(/(?:https?|ftp):\/\/[\n\S]+/g, '');
-	combinedTweets = combinedTweets.replace(/@\w+\b/g, '');
-
-	// add combined tweets to the total tweets string
-	allTweets += combinedTweets;
-
-	// save the last query to the next callback
-	archiveQuery.max_id = data[data.length-1].id;
-	// console.log(archiveQuery.max_id);
-
-	if (count > 0) {
-		count--;
-		T.get('statuses/user_timeline', archiveQuery, combine);
-	} else {
-		//call the actual markov chain generation on the aggregated tweets
-		// console.log(allTweets);
-
-		//maybe have the chain length be variable
-		var rm = new rita.RiMarkov(3, false, false);
-
-		rm.loadText(allTweets);
-	
-		var tokens = rm.generateTokens(Math.floor(Math.random() * 20 + 1));
-		var sentence = tokens.join(" ");
-
-		for (i = 0; i < sentence.length - 1; i++) {
-			if (sentence.charAt(i) === '.') {
-				sentence = sentence.slice(0, i);
-			}
-		}
-		// if (sentence.charAt(sentence.length-1) === '.') { //take out periods
-		//	sentence = sentence.slice(0, sentence.length-1);
-		// }
-
-		var hashRegex1 = /(\S+)(#)/g;
-		sentence = sentence.replace(hashRegex1,'$1 $2');
-
-		var hashRegex2 = /(#)\s(\S+)/g;
-		sentence = sentence.replace(hashRegex2,'$1$2');
-
-		var punctRegex = /["$&%-]/g;
-		sentence = sentence.replace(punctRegex, '');
-
-		var punctRegex2 = /\s(\W)/g;
-		sentence = sentence.replace(punctRegex2, '$1');
-
-		sentence = sentence.toLowerCase();
-
-		console.log("new tweet: " + sentence);
-		postTweet(sentence);
-
-		// var rm = new rita.RiMarkov(2);
-		// var sentences = rm.generateSentences(5);
-		
-
-		// for (i = 0; i < sentences.length; i++) {
-			
-			// if (sentences[i].charAt(sentences[i].length-1) === '.') { //take out periods
-			//	sentences[i] = sentences[i].slice(0, sentences[i].length-1);
-			// }
-
-			// var hashRegex = /(#)\s(\S+)/g;
-			// sentences[i] = sentences[i].replace(hashRegex,'$1$2');
-
-			// var punctRegex = /["$&%]/g;
-			// sentences[i] = sentences[i].replace(punctRegex, '');
-
-			// console.log(sentences[i]);
-		// }
-
-		// postTweet(sentences[0]);
-
-		// console.log(tweetArr.length);
-		// for (i = 0; i < tweetArr.length; i++) {
-			// console.log(tweetArr[i]);
-		// }
-	}
+function complete(a) {
+  var s = a[3] + "." + a[2] + "." + a[1] + "." + a[0];
+  return s;
 }
+
 
 function postTweet(content) {
 
